@@ -15,8 +15,8 @@
             :alt="artwork.title" 
             class="modal-image"
             :style="{
-              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
-              cursor: isPanning ? 'grabbing' : 'grab'
+            transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+            cursor: isPanning ? 'grabbing' : 'grab'
             }"
           >
 
@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps({
   modelValue: {
@@ -56,12 +56,13 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'prev', 'next']);
+const emit = defineEmits(['update:modelValue', 'prev', 'next']); // Make sure emit is defined
 
-const scale = ref(1)                       // 缩放倍率
-const position = ref({ x: 0, y: 0 })       // 平移量（像素）
+const scale = ref(1)
+const position = ref({ x: 0, y: 0 })
 const isPanning = ref(false)
-const lastMouse = ref({ mouseX: 0, mouseY: 0 })
+const startPoint = ref({ x: 0, y: 0 })
+const startTransform = ref({ x: 0, y: 0 })
 
 /** 滚轮缩放：以鼠标点为中心 */
 const handleWheel = (e) => {
@@ -76,7 +77,7 @@ const handleWheel = (e) => {
   const originalY = mouseY / scale.value
 
   // 新缩放
-  const newScale = Math.min(Math.max(scale.value - delta * 0.001, 1), 5)
+  const newScale = Math.min(Math.max(scale.value - delta * 0.002, 1), 6)
 
   // 调整平移量，让鼠标点保持不动
   position.value.x = mouseX - originalX * newScale
@@ -88,23 +89,39 @@ const handleWheel = (e) => {
 const startPan = (e) => {
   if (scale.value <= 1) return
   isPanning.value = true
-  const imgRect = e.currentTarget
-    .querySelector('img')
-    .getBoundingClientRect()
+  startPoint.value = { x: e.clientX, y: e.clientY }
+  startTransform.value = { ...position.value }
+}
 
-  lastMouse.value.mouseX = (e.clientX - imgRect.left) / scale.value
-  lastMouse.value.mouseY = (e.clientY - imgRect.top)  / scale.value
-};
-
-/** 鼠标移动：保持记录的点与鼠标重合 */
 const pan = (e) => {
   if (!isPanning.value) return
-  position.value.x = e.clientX - lastMouse.value.mouseX * scale.value
-  position.value.y = e.clientY - lastMouse.value.mouseY * scale.value
+  
+  // 计算鼠标移动的距离
+  const dx = e.clientX - startPoint.value.x
+  const dy = e.clientY - startPoint.value.y
+  
+  // 更新图片位置（相对于开始拖动时的位置）
+  position.value = {
+    x: startTransform.value.x + dx,
+    y: startTransform.value.y + dy
+  }
 };
 
 /** 鼠标抬起/离开窗口 */
-const stopPan = () => { isPanning.value = false };
+const stopPan = () => {
+  isPanning.value = false
+}
+
+// 重置位置和缩放
+const resetView = () => {
+  scale.value = 1
+  position.value = { x: 0, y: 0 }
+}
+
+// 监听模态框打开，重置视图
+watch(() => props.modelValue, (newVal) => {
+  if (newVal) resetView()
+})
 
 const handleBackdropClick = (event) => {
   if (event.target.classList.contains('modal')) {
@@ -322,4 +339,4 @@ const handleBackdropClick = (event) => {
     padding: 0 10px;
   }
 }
-</style> 
+</style>
