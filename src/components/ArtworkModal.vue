@@ -3,7 +3,24 @@
     <div class="modal-content" @click.stop>
       <span class="close-button" @click="$emit('update:modelValue', false)">&times;</span>
       <div class="modal-body">
-        <img :src="artwork.image_full" :alt="artwork.title" class="modal-image">
+        <div class="image-wrapper" 
+          @wheel.prevent="handleWheel"
+          @mousedown="startPan"
+          @mousemove="pan"
+          @mouseup="stopPan"
+          @mouseleave="stopPan"
+        >
+          <img 
+            :src="artwork.image_full" 
+            :alt="artwork.title" 
+            class="modal-image"
+            :style="{
+              transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
+              cursor: isPanning ? 'grabbing' : 'grab'
+            }"
+          >
+
+        </div>
         <div class="modal-details">
           <h2 class="modal-title">{{ artwork.title }}</h2>
           <p class="modal-artist">{{ artwork.artist }}</p>
@@ -26,7 +43,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { ref } from 'vue';
+
+const props = defineProps({
   modelValue: {
     type: Boolean,
     required: true
@@ -37,7 +56,55 @@ defineProps({
   }
 });
 
-defineEmits(['update:modelValue', 'prev', 'next']);
+const emit = defineEmits(['update:modelValue', 'prev', 'next']);
+
+const scale = ref(1)                       // 缩放倍率
+const position = ref({ x: 0, y: 0 })       // 平移量（像素）
+const isPanning = ref(false)
+const lastMouse = ref({ mouseX: 0, mouseY: 0 })
+
+/** 滚轮缩放：以鼠标点为中心 */
+const handleWheel = (e) => {
+  const delta = e.deltaY
+  const image = e.currentTarget.querySelector('img')
+  const rect = image.getBoundingClientRect()
+
+  // 当前鼠标在图片中的像素（未缩放坐标）
+  const mouseX = e.clientX - rect.left
+  const mouseY = e.clientY - rect.top
+  const originalX = mouseX / scale.value
+  const originalY = mouseY / scale.value
+
+  // 新缩放
+  const newScale = Math.min(Math.max(scale.value - delta * 0.001, 1), 5)
+
+  // 调整平移量，让鼠标点保持不动
+  position.value.x = mouseX - originalX * newScale
+  position.value.y = mouseY - originalY * newScale
+  scale.value = newScale
+};
+
+/** 鼠标按下：记录初始状态 */
+const startPan = (e) => {
+  if (scale.value <= 1) return
+  isPanning.value = true
+  const imgRect = e.currentTarget
+    .querySelector('img')
+    .getBoundingClientRect()
+
+  lastMouse.value.mouseX = (e.clientX - imgRect.left) / scale.value
+  lastMouse.value.mouseY = (e.clientY - imgRect.top)  / scale.value
+};
+
+/** 鼠标移动：保持记录的点与鼠标重合 */
+const pan = (e) => {
+  if (!isPanning.value) return
+  position.value.x = e.clientX - lastMouse.value.mouseX * scale.value
+  position.value.y = e.clientY - lastMouse.value.mouseY * scale.value
+};
+
+/** 鼠标抬起/离开窗口 */
+const stopPan = () => { isPanning.value = false };
 
 const handleBackdropClick = (event) => {
   if (event.target.classList.contains('modal')) {
@@ -96,6 +163,7 @@ const handleBackdropClick = (event) => {
   cursor: pointer;
   transition: color 0.3s ease;
   line-height: 1;
+  z-index: 2;
 }
 
 .close-button:hover {
@@ -105,18 +173,36 @@ const handleBackdropClick = (event) => {
 .modal-body {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
   align-items: center;
+}
+
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  max-height: 70vh;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #eee;
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
 }
 
 .modal-image {
   max-width: 100%;
   max-height: 70vh;
+  width: auto;
+  height: auto;
   display: block;
   object-fit: contain;
-  background-color: #eee;
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: transform 0.1s ease-out;
+  transform-origin: center center;
 }
 
 .modal-details {
@@ -220,7 +306,7 @@ const handleBackdropClick = (event) => {
     margin: 1% auto;
   }
   .modal-body {
-    gap: 20px;
+    gap: 15px;
   }
   .modal-image {
     max-height: 50vh;

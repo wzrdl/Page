@@ -1,33 +1,79 @@
 <template>
-  <div class="artwork-card" @click="$emit('click')">
-    <img :src="artwork.image_thumb" :alt="artwork.title" loading="lazy">
-    <div class="artwork-info-overlay">
-      <h3 class="artwork-title">{{ artwork.title }}</h3>
-      <p class="artwork-artist">{{ artwork.artist }}</p>
+  <div class="artwork-card" @click="openModal">
+    <div class="image-container">
+      <img 
+        :src="artwork.image_full" 
+        :alt="artwork.title" 
+        loading="lazy"
+        @load="onImageLoad"
+        ref="imageRef"
+      >
+    </div>
+    <div class="artwork-info" :style="infoStyle">
+      <h3>{{ artwork.title }}</h3>
+      <p>艺术家: {{ artwork.artist }}</p>
+      <p>创作年份: {{ artwork.creation_year }}</p>
+      <p>尺寸: {{ artwork.dimensions }}</p>
+      <p>材质: {{ artwork.material }}</p>
     </div>
   </div>
 </template>
 
-<script setup>
-defineProps({
-  artwork: {
-    type: Object,
-    required: true
+<script>
+export default {
+  props: {
+    artwork: {
+      type: Object,
+      required: true
+    }
+  },
+  data() {
+    return {
+      imageHeight: 0,
+      imageWidth: 0
+    }
+  },
+  computed: {
+    infoStyle() {
+      return {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: 'rgba(255, 255, 255, 0.9)',
+        transform: 'translateY(100%)',
+        transition: 'transform 0.3s ease'
+      }
+    }
+  },
+  methods: {
+    openModal() {
+      this.$emit('open-modal', this.artwork);
+    },
+    onImageLoad(event) {
+      const img = event.target;
+      this.imageHeight = img.naturalHeight;
+      this.imageWidth = img.naturalWidth;
+      
+      // 设置图片容器的宽高比
+      const container = this.$refs.imageRef.parentElement;
+      container.style.aspectRatio = `${this.imageWidth} / ${this.imageHeight}`;
+    }
   }
-});
-
-defineEmits(['click']);
+};
 </script>
 
 <style scoped>
 .artwork-card {
+  position: relative;
   background-color: #fff;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  border-radius: 5px;
+  break-inside: avoid;
+  margin-bottom: 20px;
 }
 
 .artwork-card:hover {
@@ -35,40 +81,36 @@ defineEmits(['click']);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.artwork-card img {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
-  background-color: #eee;
-}
-
-.artwork-info-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0));
-  color: #fff;
-  padding: 15px;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  pointer-events: none;
-  box-sizing: border-box;
-}
-
-.artwork-card:hover .artwork-info-overlay {
+.artwork-card:hover .artwork-info {
   transform: translateY(0);
 }
 
-.artwork-title {
-  font-size: 1.3em;
-  margin-bottom: 5px;
-  font-family: 'Noto Serif SC', serif;
+.image-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
-.artwork-artist {
+.image-container img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.artwork-info {
+  padding: 15px;
+}
+
+.artwork-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.artwork-info p {
+  margin: 5px 0;
   font-size: 0.9em;
-  opacity: 0.8;
+  color: #666;
 }
 </style> 

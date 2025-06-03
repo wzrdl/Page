@@ -7,7 +7,7 @@
           v-for="artwork in artworks"
           :key="artwork.id"
           :artwork="artwork"
-          @click="openModal(artwork)"
+          @open-modal="openModal"
         />
       </div>
     </main>
@@ -57,22 +57,24 @@ const navigateArtwork = (direction) => {
 .main-content {
   flex: 1;
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
 }
 
 .artwork-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 30px;
+  column-count: 3;
+  column-gap: 20px;
   padding: 20px 0;
+}
+
+@media (max-width: 1200px) {
+  .artwork-grid {
+    column-count: 2;
+  }
 }
 
 @media (max-width: 768px) {
   .artwork-grid {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
+    column-count: 1;
   }
 }
 </style> 
