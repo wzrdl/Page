@@ -35,8 +35,8 @@
         </div>
       </div>
       <div class="modal-navigation">
-        <button class="nav-button prev-button" @click="$emit('prev')">&larr;</button>
-        <button class="nav-button next-button" @click="$emit('next')">&rarr;</button>
+        <button class="nav-button prev-button" @click="$emit('prev')">←</button>
+        <button class="nav-button next-button" @click="$emit('next')">→</button>
       </div>
     </div>
   </div>
@@ -277,13 +277,19 @@ const handleBackdropClick = (event) => {
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   border: none;
-  padding: 15px 20px;
-  font-size: 2em;
+  padding: 12px 16px;
+  font-size: 24px;
   cursor: pointer;
   border-radius: 50%;
   line-height: 1;
+  height: 50px;
+  width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background-color 0.3s ease, transform 0.3s ease;
   pointer-events: all;
+  font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .nav-button:hover {
